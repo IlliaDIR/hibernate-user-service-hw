@@ -24,20 +24,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         User user = new User();
         user.setEmail(email);
         user.setPassword(password);
-        return userService.save(user);
+        return userService.add(user);
     }
 
     @Override
     public User login(String email, String password) throws AuthenticationException {
         Optional<User> userFromDB = userService.findByEmail(email);
-        if (userFromDB.isEmpty()) {
-            throw new AuthenticationException("Can't authenticate user. User not found.");
+        if (userFromDB.isEmpty() || !userFromDB.get().getPassword().equals(
+                HashUtil.hashPassword(password, userFromDB.get().getSalt()))) {
+            throw new AuthenticationException("Can't authenticate user. "
+                    + "Invalid email or password.");
         }
-        String hashedPassword = HashUtil.hashPassword(password, userFromDB.get().getSalt());
-        User user = userFromDB.get();
-        if (user.getPassword().equals(hashedPassword)) {
-            return user;
-        }
-        throw new AuthenticationException("Can't authenticate user. Wrong input parameters.");
+        return userFromDB.get();
     }
 }
